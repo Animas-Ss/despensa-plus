@@ -5,6 +5,9 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+// Conexión a PostgreSQL (verifica conectividad al iniciar)
+import './config/db.js';
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 

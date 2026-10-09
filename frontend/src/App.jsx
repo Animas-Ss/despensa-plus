@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 export default function App() {
   const [healthStatus, setHealthStatus] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/health')
+    fetch(`${API_BASE_URL}/api/health`)
       .then((res) => res.json())
       .then((data) => {
         setHealthStatus(data);
@@ -13,7 +15,7 @@ export default function App() {
       })
       .catch((err) => {
         console.error('Error al conectar con la API:', err);
-        setHealthStatus({ status: 'error', message: 'Servidor API fuera de línea (en puerto 5000)' });
+        setHealthStatus({ status: 'error', message: `Servidor API fuera de línea (${API_BASE_URL})` });
         setLoading(false);
       });
   }, []);
@@ -68,7 +70,7 @@ export default function App() {
             </h2>
 
             {loading ? (
-              <p className="text-xs text-slate-500 animate-pulse">Verificando http://localhost:5000/api/health...</p>
+              <p className="text-xs text-slate-500 animate-pulse">Verificando {API_BASE_URL}/api/health...</p>
             ) : (
               <div className="text-xs font-mono bg-slate-900 text-slate-100 p-3 rounded overflow-x-auto">
                 {JSON.stringify(healthStatus, null, 2)}

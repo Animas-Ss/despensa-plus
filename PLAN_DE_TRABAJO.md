@@ -37,27 +37,33 @@
 
 ---
 
-#### **Día 2: Esquema PostgreSQL, Migraciones SQL y Conexión de Persistencia (DER)**
-- [ ] **Módulo DB (`backend/src/config/db.js`):** Crear pool de conexiones a PostgreSQL con librería `pg`.
-- [ ] **Script DDL (`backend/src/db/schema.sql`):** Definición de las 6 tablas relacionales del DER:
-  - [ ] Tabla `Usuario`: `id_usuario SERIAL PK`, `nombre`, `email UNIQUE`, `password_hash`, `rol`, `fecha_creacion`.
-  - [ ] Tabla `Producto`: `id_producto SERIAL PK`, `nombre`, `categoria`, `unidad_medida`, `stock_actual`, `stock_minimo`, `estado`.
-  - [ ] Tabla `Donacion`: `id_donacion SERIAL PK`, `fecha`, `donante`, `observaciones`, `id_usuario FK`.
-  - [ ] Tabla `DetalleDonacion`: `id_detalle SERIAL PK`, `id_donacion FK`, `id_producto FK`, `cantidad CHECK(>0)`, `fecha_vencimiento`.
-  - [ ] Tabla `Salida`: `id_salida SERIAL PK`, `fecha`, `motivo` (Vianda/Merienda), `observaciones`, `id_usuario FK`.
-  - [ ] Tabla `DetalleSalida`: `id_detalle SERIAL PK`, `id_salida FK`, `id_producto FK`, `cantidad CHECK(>0)`.
-- [ ] **Script Seed (`backend/src/db/seed.sql`):** Datos iniciales (usuario administrador inicial, categorías y unidades de medida).
-- [ ] **Prueba de Persistencia:** Ejecución del script DDL y verificación de consulta `SELECT NOW()`.
+#### **Día 2: Esquema PostgreSQL, Migraciones SQL y Conexión de Persistencia (DER) (COMPLETADO ✅)**
+- [x] **Módulo DB (`backend/src/config/db.js`):** Pool de conexiones a PostgreSQL con librería `pg`.
+- [x] **Script DDL (`backend/src/db/schema.sql`):** Definición de las 6 tablas relacionales del DER:
+  - [x] Tabla `Usuario`: `id_usuario SERIAL PK`, `nombre`, `email UNIQUE`, `password_hash`, `rol`, `fecha_creacion`.
+  - [x] Tabla `Producto`: `id_producto SERIAL PK`, `nombre`, `categoria`, `unidad_medida`, `stock_actual`, `stock_minimo`, `estado`.
+  - [x] Tabla `Donacion`: `id_donacion SERIAL PK`, `fecha`, `donante`, `observaciones`, `id_usuario FK`.
+  - [x] Tabla `DetalleDonacion`: `id_detalle SERIAL PK`, `id_donacion FK`, `id_producto FK`, `cantidad CHECK(>0)`, `fecha_vencimiento`.
+  - [x] Tabla `Salida`: `id_salida SERIAL PK`, `fecha`, `motivo` (Vianda/Merienda), `observaciones`, `id_usuario FK`.
+  - [x] Tabla `DetalleSalida`: `id_detalle SERIAL PK`, `id_salida FK`, `id_producto FK`, `cantidad CHECK(>0)`.
+- [x] **Script Seed (`backend/src/db/seed.sql`):** Datos iniciales (usuario administrador + 12 productos de ejemplo con categorías y unidades).
+- [ ] **Prueba de Persistencia:** ⚠️ **PENDIENTE** — El DDL y el Seed **aún no han sido ejecutados contra una base de datos PostgreSQL real**. Para continuar con el flujo completo de autenticación es necesario:
+  1. Provisionar una base de datos PostgreSQL (Neon / Supabase / Render / local).
+  2. Configurar la variable `DATABASE_URL` en el archivo `backend/.env`.
+  3. Ejecutar `psql -d <DATABASE_URL> -f backend/src/db/schema.sql`.
+  4. Ejecutar `psql -d <DATABASE_URL> -f backend/src/db/seed.sql`.
+  5. Verificar que `SELECT NOW()` retorna fecha válida al iniciar el servidor.
+  > **Impacto:** Sin esta ejecución, `POST /api/auth/login` fallará con error de conexión. El código está correcto y listo; solo falta la instancia de BD.
 
 ---
 
 ### 🔐 FASE 2: Autenticación de Usuarios y Catálogo de Productos
 
-#### **Día 3: Backend - Autenticación JWT y Usuarios (RF01 / RNF01)**
-- [ ] **Controller (`backend/src/controllers/authController.js`):** Métodos `login` con Bcrypt y `obtenerPerfil`.
-- [ ] **Middleware (`backend/src/middlewares/authMiddleware.js`):** Interceptor para verificar cabecera `Authorization: Bearer <token>`.
-- [ ] **Rutas (`backend/src/routes/authRoutes.js`):** Endpoints `POST /api/auth/login` y `GET /api/auth/me`.
-- [ ] **Pruebas de Seguridad:** Validación de rechazo HTTP 401 Unauthorized para peticiones no autenticadas.
+#### **Día 3: Backend - Autenticación JWT y Usuarios (RF01 / RNF01) (COMPLETADO ✅)**
+- [x] **Controller (`backend/src/controllers/authController.js`):** Métodos `login` con Bcrypt y `obtenerPerfil`.
+- [x] **Middleware (`backend/src/middlewares/authMiddleware.js`):** Interceptor para verificar cabecera `Authorization: Bearer <token>`.
+- [x] **Rutas (`backend/src/routes/authRoutes.js`):** Endpoints `POST /api/auth/login` y `GET /api/auth/me`.
+- [ ] **Pruebas de Seguridad:** ⚠️ **PENDIENTE (requiere BD activa)** — Validación empírica de HTTP 401 para peticiones no autenticadas.
 
 ---
 

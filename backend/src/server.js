@@ -7,6 +7,7 @@ dotenv.config();
 
 // Conexión a PostgreSQL (verifica conectividad al iniciar)
 import './config/db.js';
+import authRoutes from './routes/authRoutes.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -42,6 +43,9 @@ app.get('/api/health', (req, res) => {
     version: '1.0.0'
   });
 });
+
+// ── Rutas de la API ──────────────────────────────────────────
+app.use('/api/auth', authRoutes);
 
 // Middleware de manejo de rutas no encontradas (404)
 app.use((req, res) => {

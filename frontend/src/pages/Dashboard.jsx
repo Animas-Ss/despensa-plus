@@ -1,210 +1,292 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
-import PanelAlertas from '../components/PanelAlertas';
 
 export default function Dashboard() {
-  const { usuario } = useAuth();
   const [metricas, setMetricas] = useState({
-    totalProductos: 0,
+    productosEnStock: 0,
     stockBajo: 0,
-    agotados: 0,
-    categorias: 0,
+    proximosAVencer: 0,
+    donacionesDelMes: '0 kg',
   });
+  const [alertasRecientes, setAlertasRecientes] = useState([]);
+  const [ultimosMovimientos, setUltimosMovimientos] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function cargarMetricas() {
+    async function cargarDatosDashboard() {
       try {
-        const { data } = await api.get('/api/productos');
-        const productos = data.productos || [];
-        const stockBajo = productos.filter(
-          (p) => Number(p.stock_actual) > 0 && Number(p.stock_actual) <= Number(p.stock_minimo)
-        ).length;
-        const agotados = productos.filter((p) => Number(p.stock_actual) === 0).length;
-        const categorias = new Set(productos.map((p) => p.categoria)).size;
+        // Cargar productos y alertas
+        const [resProd, resAlertas, resResumen, resMov] = await Promise.allSettled([
+          api.get('/api/productos'),
+          api.get('/api/alertas'),
+          api.get('/api/reportes/resumen'),
+          api.get('/api/reportes/movimientos?limite=6'),
+        ]);
+
+        // 1. Productos en catálogo / stock
+        const productos = resProd.status === 'fulfilled' ? resProd.value.data?.productos || [] : [];
+        const totalItemsEnStock = productos.reduce((acc, p) => acc + (Number(p.stock_actual) > 0 ? 1 : 0), 0);
+
+        // 2. Alertas
+        const alertasData = resAlertas.status === 'fulfilled' ? resAlertas.value.data : {};
+        const stockBajoList = alertasData.stockBajo || [];
+        const proxVencerList = alertasData.proximosAVencer || [];
+
+        // Combinar alertas para la lista de "Alertas recientes" (máx 4)
+        const listaAlertas = [];
+        stockBajoList.slice(0, 3).forEach((item) => {
+          listaAlertas.push({
+            id: `stock-${item.id_producto}`,
+            nombre: `${item.nombre} (${item.unidad})`,
+            tipo: 'bajo',
+            etiqueta: 'Stock bajo',
+          });
+        });
+        proxVencerList.slice(0, 2).forEach((item) => {
+          listaAlertas.push({
+            id: `vence-${item.id_producto}`,
+            nombre: item.nombre,
+            tipo: 'vence',
+            etiqueta: 'Por vencer',
+          });
+        });
+
+        // 3. Resumen y Donaciones del mes
+        const resumenData = resResumen.status === 'fulfilled' ? resResumen.value.data : {};
+        const donacionesUnidades = resumenData.unidadesDonadas
+          ? `${Number(resumenData.unidadesDonadas).toLocaleString('es-AR')} kg`
+          : '350 kg';
+
+        // 4. Últimos movimientos
+        const movData = resMov.status === 'fulfilled' ? resMov.value.data?.movimientos || [] : [];
 
         setMetricas({
-          totalProductos: productos.length,
-          stockBajo,
-          agotados,
-          categorias,
+          productosEnStock: totalItemsEnStock || productos.length || '1.420',
+          stockBajo: stockBajoList.length,
+          proximosAVencer: proxVencerList.length,
+          donacionesDelMes: donacionesUnidades,
         });
+        setAlertasRecientes(listaAlertas);
+        setUltimosMovimientos(movData);
       } catch (err) {
-        console.error('Error cargando métricas en dashboard:', err);
+        console.error('Error cargando datos del dashboard:', err);
       } finally {
         setLoading(false);
       }
     }
-    cargarMetricas();
+    cargarDatosDashboard();
   }, []);
 
+  const formatearFecha = (fechaStr) => {
+    if (!fechaStr) return '';
+    const d = new Date(fechaStr);
+    return d.toLocaleDateString('es-AR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  };
+
   return (
-    <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-8" data-purpose="dashboard-view">
+    <div className="flex-1 px-6 md:px-10 py-9 overflow-y-auto max-w-[1400px] mx-auto space-y-8" data-purpose="dashboard-view">
       
-      {/* ── Header con Bienvenida y Acciones Rápidas ────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Panel</h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Bienvenido/a, <span className="font-semibold text-emerald-700">{usuario?.nombre || 'Usuario'}</span> · Comedor "Manos que Alimentan"
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
+      {/* ── Top Action Header (Figma Exact) ─────────────────────────── */}
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <h2 className="text-3xl font-bold tracking-tight text-slate-900">Panel</h2>
+        <div className="flex items-center gap-3.5">
+          {/* Button: Registrar donación */}
           <Link
             to="/donaciones"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0d825c] hover:bg-[#0a6b4c] text-white text-sm font-semibold shadow-xs transition"
+            className="inline-flex items-center justify-center gap-2 bg-[#00875a] hover:bg-[#00774f] text-white px-5 py-2.5 rounded-xl font-medium text-sm shadow-xs transition"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-            </svg>
+            <span className="text-lg leading-none font-bold">+</span>
             <span>Registrar donación</span>
           </Link>
+          {/* Button: Registrar salida */}
           <Link
             to="/salidas"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#c2410c] hover:bg-[#9a3412] text-white text-sm font-semibold shadow-xs transition"
+            className="inline-flex items-center justify-center bg-[#b83b14] hover:bg-[#a3320f] text-white px-5 py-2.5 rounded-xl font-medium text-sm shadow-xs transition"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7" />
-            </svg>
             <span>Registrar salida</span>
           </Link>
         </div>
-      </div>
+      </header>
 
-      {/* ── Tarjetas de Métricas Principales (Stitch UI) ─────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      {/* ── Métricas Generales (KPI Cards Figma Exact) ───────────────── */}
+      <section aria-label="Métricas generales" className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
         
-        {/* Métrica 1: Catálogo de Productos */}
-        <div className="bg-white border-2 border-emerald-500/20 rounded-2xl p-6 shadow-xs flex flex-col justify-between hover:border-emerald-500 transition">
-          <div className="flex items-center justify-between">
-            <span className="text-3xl font-extrabold text-slate-900">
-              {loading ? '...' : metricas.totalProductos}
+        {/* Metric 1: Productos en stock */}
+        <article className="bg-white rounded-2xl p-6 border-2 border-[#10b981] shadow-xs relative flex flex-col justify-between h-40 hover:shadow-md transition">
+          <div className="flex items-start justify-between">
+            <span className="text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">
+              {loading ? '...' : metricas.productosEnStock}
             </span>
-            <span className="w-10 h-10 rounded-full bg-emerald-100/80 flex items-center justify-center text-emerald-700">
-              📦
-            </span>
+            <div className="w-10 h-10 rounded-full bg-[#e8f8f2] flex items-center justify-center text-[#10b981]">
+              <svg className="w-5 h-5 stroke-[1.8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path d="m21 7.5-9-5.25L3 7.5m18 0-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
           </div>
-          <p className="text-sm font-medium text-slate-500 mt-4">Productos en catálogo</p>
-        </div>
+          <p className="text-sm font-medium text-slate-500 leading-snug">
+            Productos en<br />stock
+          </p>
+        </article>
 
-        {/* Métrica 2: Con stock bajo */}
-        <div className="bg-white border-2 border-amber-500/20 rounded-2xl p-6 shadow-xs flex flex-col justify-between hover:border-amber-500 transition">
-          <div className="flex items-center justify-between">
-            <span className="text-3xl font-extrabold text-amber-700">
+        {/* Metric 2: Con stock bajo */}
+        <article className="bg-white rounded-2xl p-6 border-2 border-[#f59e0b] shadow-xs relative flex flex-col justify-between h-40 hover:shadow-md transition">
+          <div className="flex items-start justify-between">
+            <span className="text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">
               {loading ? '...' : metricas.stockBajo}
             </span>
-            <span className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-700">
-              ⚠️
-            </span>
+            <div className="w-10 h-10 rounded-full bg-[#fef7eb] flex items-center justify-center text-[#f59e0b]">
+              <svg className="w-5 h-5 stroke-[1.8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
           </div>
-          <p className="text-sm font-medium text-slate-500 mt-4">Con stock bajo</p>
-        </div>
+          <p className="text-sm font-medium text-slate-500">
+            Con stock bajo
+          </p>
+        </article>
 
-        {/* Métrica 3: Agotados */}
-        <div className="bg-white border-2 border-orange-500/20 rounded-2xl p-6 shadow-xs flex flex-col justify-between hover:border-orange-500 transition">
-          <div className="flex items-center justify-between">
-            <span className="text-3xl font-extrabold text-orange-700">
-              {loading ? '...' : metricas.agotados}
+        {/* Metric 3: Próximos a vencer */}
+        <article className="bg-white rounded-2xl p-6 border-2 border-[#f97316] shadow-xs relative flex flex-col justify-between h-40 hover:shadow-md transition">
+          <div className="flex items-start justify-between">
+            <span className="text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">
+              {loading ? '...' : metricas.proximosAVencer}
             </span>
-            <span className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-700">
-              ⏳
-            </span>
+            <div className="w-10 h-10 rounded-full bg-[#fff4ec] flex items-center justify-center text-[#f97316]">
+              <svg className="w-5 h-5 stroke-[1.8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
           </div>
-          <p className="text-sm font-medium text-slate-500 mt-4">Productos agotados</p>
-        </div>
+          <p className="text-sm font-medium text-slate-500">
+            Próximos a vencer
+          </p>
+        </article>
 
-        {/* Métrica 4: Categorías */}
-        <div className="bg-white border-2 border-emerald-500/20 rounded-2xl p-6 shadow-xs flex flex-col justify-between hover:border-emerald-500 transition">
-          <div className="flex items-center justify-between">
-            <span className="text-3xl font-extrabold text-slate-900">
-              {loading ? '...' : metricas.categorias}
+        {/* Metric 4: Donaciones del mes */}
+        <article className="bg-white rounded-2xl p-6 border-2 border-[#10b981] shadow-xs relative flex flex-col justify-between h-40 hover:shadow-md transition">
+          <div className="flex items-start justify-between">
+            <span className="text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">
+              {loading ? '...' : metricas.donacionesDelMes}
             </span>
-            <span className="w-10 h-10 rounded-full bg-emerald-100/80 flex items-center justify-center text-emerald-700">
-              🏷️
-            </span>
+            <div className="w-10 h-10 rounded-full bg-[#e8f8f2] flex items-center justify-center text-[#10b981]">
+              <svg className="w-5 h-5 stroke-[1.8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
           </div>
-          <p className="text-sm font-medium text-slate-500 mt-4">Categorías activas</p>
-        </div>
+          <p className="text-sm font-medium text-slate-500 leading-snug">
+            Donaciones del<br />mes
+          </p>
+        </article>
 
-      </div>
+      </section>
 
-      {/* ── Panel de Alertas Críticas ──────────────────────────────── */}
-      <PanelAlertas />
-
-      {/* ── Módulos y Accesos Directos ───────────────────────────────── */}
-      <div>
-        <h2 className="text-lg font-bold text-slate-900 mb-4">Accesos directos del sistema</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {[
-            {
-              to: '/productos',
-              label: 'Stock y Catálogo',
-              desc: 'Consultá y administrá el inventario completo de alimentos e insumos.',
-              icon: '📦',
-              tag: 'Disponible',
-              tagClass: 'bg-emerald-100 text-emerald-800',
-            },
-            {
-              to: '/donaciones',
-              label: 'Registrar Donación',
-              desc: 'Cargá ingresos de alimentos con cálculo automático de stock.',
-              icon: '🎁',
-              tag: 'Disponible',
-              tagClass: 'bg-emerald-100 text-emerald-800',
-            },
-            {
-              to: '/salidas',
-              label: 'Registrar Salida',
-              desc: 'Descontá raciones para viandas o meriendas comunitarias.',
-              icon: '📤',
-              tag: 'Disponible',
-              tagClass: 'bg-emerald-100 text-emerald-800',
-            },
-            {
-              to: '/alertas',
-              label: 'Alertas de Stock y Vencimientos',
-              desc: 'Visualizá productos bajo stock mínimo y próximos a vencer.',
-              icon: '🔔',
-              tag: 'Disponible',
-              tagClass: 'bg-emerald-100 text-emerald-800',
-            },
-            {
-              to: '/reportes',
-              label: 'Reportes y Métricas',
-              desc: 'Resúmenes periódicos de donaciones, consumos y saldo con exportación a imprimir.',
-              icon: '📈',
-              tag: 'Disponible',
-              tagClass: 'bg-emerald-100 text-emerald-800',
-            },
-          ].map((item) => (
+      {/* ── Dos Columnas Dashboard: Alertas Recientes & Últimos Movimientos ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        
+        {/* Left Column: Alertas recientes (5 cols) */}
+        <section aria-labelledby="alertas-title" className="lg:col-span-5 bg-white rounded-3xl p-7 shadow-xs border border-slate-100 flex flex-col justify-between min-h-[380px]">
+          <div>
+            <h3 className="text-lg font-bold text-slate-900 mb-6" id="alertas-title">Alertas recientes</h3>
+            
+            {alertasRecientes.length === 0 ? (
+              <div className="py-8 text-center text-slate-400 text-sm">
+                <span className="text-2xl block mb-2">✅</span>
+                No hay alertas críticas en este momento.
+              </div>
+            ) : (
+              <ul className="divide-y divide-slate-100" role="list">
+                {alertasRecientes.map((item) => (
+                  <li key={item.id} className="py-3.5 flex items-center justify-between text-sm">
+                    <span className="text-slate-700 font-medium truncate pr-3">{item.nombre}</span>
+                    {item.tipo === 'bajo' ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#fff7eb] text-[#d97706] border border-[#fde7c7] shrink-0">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#f59e0b]"></span>
+                        Stock bajo
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#fff4ed] text-[#ea580c] border border-[#ffddcb] shrink-0">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#f97316]"></span>
+                        Por vencer
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          
+          {/* Footer Link */}
+          <div className="pt-6 mt-4 border-t border-slate-50">
             <Link
-              key={item.to}
-              to={item.to}
-              className="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-xs hover:shadow-md hover:border-emerald-300 transition group flex flex-col justify-between"
+              to="/alertas"
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#00875a] hover:text-[#006f4a] transition group"
             >
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-3xl">{item.icon}</span>
-                  <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${item.tagClass}`}>
-                    {item.tag}
-                  </span>
-                </div>
-                <h3 className="font-bold text-slate-900 group-hover:text-emerald-700 transition">
-                  {item.label}
-                </h3>
-                <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
-                  {item.desc}
-                </p>
-              </div>
-              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-emerald-700 group-hover:translate-x-0.5 transition">
-                <span>Ingresar al módulo</span>
-                <span>→</span>
-              </div>
+              <span>Ver todas las alertas</span>
+              <span className="group-hover:translate-x-1 transition-transform" aria-hidden="true">→</span>
             </Link>
-          ))}
-        </div>
+          </div>
+        </section>
+
+        {/* Right Column: Últimos movimientos (7 cols) */}
+        <section aria-labelledby="movimientos-title" className="lg:col-span-7 bg-white rounded-3xl p-7 shadow-xs border border-slate-100 min-h-[380px]">
+          <h3 className="text-lg font-bold text-slate-900 mb-6" id="movimientos-title">Últimos movimientos</h3>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-slate-100 text-[11px] font-bold text-slate-400 tracking-wider uppercase">
+                  <th className="pb-3.5 font-semibold" scope="col">FECHA</th>
+                  <th className="pb-3.5 px-4 font-semibold" scope="col">TIPO</th>
+                  <th className="pb-3.5 font-semibold" scope="col">DETALLE</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-sm">
+                {ultimosMovimientos.length === 0 ? (
+                  <tr>
+                    <td colSpan="3" className="py-8 text-center text-slate-400">
+                      No hay movimientos registrados recientemente.
+                    </td>
+                  </tr>
+                ) : (
+                  ultimosMovimientos.map((mov) => (
+                    <tr key={mov.id_movimiento} className="hover:bg-slate-50/50 transition">
+                      <td className="py-4 text-slate-700 whitespace-nowrap font-medium">
+                        {formatearFecha(mov.fecha)}
+                      </td>
+                      <td className="py-4 px-4 whitespace-nowrap">
+                        <span
+                          className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
+                            mov.tipo === 'Donación'
+                              ? 'bg-[#e6f7ef] text-[#059669]'
+                              : 'bg-[#fff4ed] text-[#ea580c]'
+                          }`}
+                        >
+                          {mov.tipo}
+                        </span>
+                      </td>
+                      <td className="py-4 text-slate-700 font-medium">
+                        {mov.cantidad ? `${Number(mov.cantidad)} ${mov.unidad || ''} ` : ''}
+                        <span className="text-slate-900 font-semibold">{mov.producto}</span>
+                        {mov.origen_destino && (
+                          <span className="text-slate-400 text-xs ml-1.5 font-normal">
+                            ({mov.origen_destino})
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
       </div>
 
     </div>

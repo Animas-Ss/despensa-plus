@@ -5,31 +5,52 @@ dotenv.config();
 
 const { Pool } = pg;
 
-// Pool de conexiones a PostgreSQL
-// En producción (Render) usa DATABASE_URL directamente.
-// En desarrollo local usa las variables individuales o DATABASE_URL del .env
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  // En Render/Supabase/Neon con SSL habilitado:
-  ssl: process.env.NODE_ENV === 'production'
-    ? { rejectUnauthorized: false }
-    : false,
+const isProduction = process.env.NODE_ENV === 'production';
+
+// Configuración de conexión según el entorno
+const poolConfig = isProduction
+  ? {
+    // Producción: Render
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false },
+  }
+  : {
+    // Desarrollo local: PostgreSQL en Docker
+    host: process.env.DB_HOST || 'localhost',
+    port: Number(process.env.DB_PORT || 5432),
+    database: process.env.DB_NAME || 'despensa_dev',
+    user: process.env.DB_USER || 'despensa_user',
+    password: process.env.DB_PASSWORD,
+    ssl: false,
+  };
+
+const pool = new Pool(poolConfig);
+
+// Manejo de errores inesperados del pool
+pool.on('error', (err) => {
+  console.error('❌ Error inesperado en PostgreSQL:', err.message);
 });
 
-// Verificación de conectividad al iniciar
-pool.connect((err, client, release) => {
-  if (err) {
+// Verificar la conexión al iniciar
+async function checkConnection() {
+  let client;
+
+  try {
+    client = await pool.connect();
+
+    const result = await client.query('SELECT NOW() AS server_time');
+
+    console.log(
+      `✅ PostgreSQL conectado — ${result.rows[0].server_time}`
+    );
+
+  } catch (err) {
     console.error('❌ Error al conectar con PostgreSQL:', err.message);
-    return;
+  } finally {
+    client?.release();
   }
-  client.query('SELECT NOW()', (queryErr, result) => {
-    release();
-    if (queryErr) {
-      console.error('❌ Error en consulta de verificación:', queryErr.message);
-    } else {
-      console.log(`✅ PostgreSQL conectado — ${result.rows[0].now}`);
-    }
-  });
-});
+}
+
+checkConnection();
 
 export default pool;

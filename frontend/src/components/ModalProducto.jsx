@@ -3,6 +3,20 @@ import api from '../services/api';
 
 const UNIDADES = ['kg', 'litros', 'unidades', 'paquetes', 'cajas'];
 
+const CATEGORIAS_SUGERIDAS = [
+  'Cereales y granos',
+  'Legumbres',
+  'Aceites y grasas',
+  'Lácteos',
+  'Harinas',
+  'Endulzantes',
+  'Condimentos',
+  'Conservas',
+  'Infusiones',
+  'Limpieza e higiene',
+  'Otros',
+];
+
 const FORM_VACIO = {
   nombre:       '',
   categoria:    '',
@@ -40,11 +54,11 @@ export default function ModalProducto({ producto, onGuardado, onCancelar }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.nombre.trim() || !form.categoria.trim()) {
-      setError('El nombre y la categoría son obligatorios.');
+      setError('El nombre y la categoría son campos obligatorios.');
       return;
     }
     if (form.stock_minimo !== '' && Number(form.stock_minimo) < 0) {
-      setError('El stock mínimo no puede ser negativo.');
+      setError('El stock mínimo no puede ser un valor negativo.');
       return;
     }
 
@@ -76,96 +90,150 @@ export default function ModalProducto({ producto, onGuardado, onCancelar }) {
   };
 
   return (
-    // Backdrop
     <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4"
-      onClick={(e) => { if (e.target === e.currentTarget) onCancelar(); }}
+      className="fixed inset-0 bg-black/45 backdrop-blur-xs flex items-center justify-center z-50 p-4 transition-all"
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !loading) onCancelar();
+      }}
     >
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-
-        {/* Header */}
-        <div className="bg-emerald-700 px-6 py-4 flex items-center justify-between">
-          <h2 className="text-white font-bold text-lg">
-            {esEdicion ? '✏️ Editar Producto' : '➕ Nuevo Producto'}
-          </h2>
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
+        
+        {/* Header Modal */}
+        <div className="bg-[#0d5945] px-6 sm:px-8 py-5 flex items-center justify-between text-white">
+          <div>
+            <h2 className="text-xl font-bold tracking-tight">
+              {esEdicion ? 'Editar Producto' : 'Nuevo Producto'}
+            </h2>
+            <p className="text-xs text-emerald-100/80 mt-0.5">
+              {esEdicion
+                ? 'Modificá los datos del producto en el catálogo'
+                : 'Ingresá un nuevo artículo para habilitar su stock y donaciones'}
+            </p>
+          </div>
           <button
             id="btn-cerrar-modal"
+            type="button"
             onClick={onCancelar}
-            className="text-emerald-200 hover:text-white transition-colors text-xl leading-none"
+            disabled={loading}
+            className="text-emerald-100/80 hover:text-white p-1 rounded-lg hover:bg-[#0a4838] transition cursor-pointer"
+            aria-label="Cerrar modal"
           >
-            ✕
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
 
         {/* Formulario */}
-        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
-
+        <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-5">
+          
+          {/* Alerta de Error */}
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-2.5">
-              ⚠️ {error}
+            <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3 flex items-start gap-2">
+              <span className="text-base select-none">⚠️</span>
+              <span>{error}</span>
             </div>
           )}
 
+          {/* Nombre */}
           <div>
-            <label htmlFor="nombre" className="block text-sm font-medium text-slate-700 mb-1">Nombre *</label>
+            <label htmlFor="nombre" className="block text-sm font-medium text-slate-700 mb-1.5">
+              Nombre del producto *
+            </label>
             <input
-              id="nombre" name="nombre" type="text"
-              value={form.nombre} onChange={handleChange}
-              placeholder="Ej: Arroz"
+              id="nombre"
+              name="nombre"
+              type="text"
+              value={form.nombre}
+              onChange={handleChange}
+              placeholder="Ej: Fideos Tallarines"
               disabled={loading}
-              className="w-full border border-slate-300 rounded-lg px-4 py-2 text-sm
-                         focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:bg-slate-50"
+              className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400
+                         focus:outline-none focus:border-[#0d825c] focus:ring-1 focus:ring-[#0d825c] transition disabled:bg-slate-50"
             />
           </div>
 
+          {/* Categoría con Datalist de sugerencias */}
           <div>
-            <label htmlFor="categoria" className="block text-sm font-medium text-slate-700 mb-1">Categoría *</label>
+            <label htmlFor="categoria" className="block text-sm font-medium text-slate-700 mb-1.5">
+              Categoría *
+            </label>
             <input
-              id="categoria" name="categoria" type="text"
-              value={form.categoria} onChange={handleChange}
+              id="categoria"
+              name="categoria"
+              type="text"
+              list="categorias-list"
+              value={form.categoria}
+              onChange={handleChange}
               placeholder="Ej: Cereales y granos"
               disabled={loading}
-              className="w-full border border-slate-300 rounded-lg px-4 py-2 text-sm
-                         focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:bg-slate-50"
+              className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400
+                         focus:outline-none focus:border-[#0d825c] focus:ring-1 focus:ring-[#0d825c] transition disabled:bg-slate-50"
             />
+            <datalist id="categorias-list">
+              {CATEGORIAS_SUGERIDAS.map((c) => (
+                <option key={c} value={c} />
+              ))}
+            </datalist>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          {/* Grilla: Unidad y Stock Mínimo */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="unidad" className="block text-sm font-medium text-slate-700 mb-1">Unidad</label>
+              <label htmlFor="unidad" className="block text-sm font-medium text-slate-700 mb-1.5">
+                Unidad de medida *
+              </label>
               <select
-                id="unidad" name="unidad"
-                value={form.unidad} onChange={handleChange}
+                id="unidad"
+                name="unidad"
+                value={form.unidad}
+                onChange={handleChange}
                 disabled={loading}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm
-                           focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:bg-slate-50"
+                className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-800 bg-white
+                           focus:outline-none focus:border-[#0d825c] focus:ring-1 focus:ring-[#0d825c] transition disabled:bg-slate-50 cursor-pointer"
               >
-                {UNIDADES.map((u) => <option key={u} value={u}>{u}</option>)}
+                {UNIDADES.map((u) => (
+                  <option key={u} value={u}>
+                    {u}
+                  </option>
+                ))}
               </select>
             </div>
 
             <div>
-              <label htmlFor="stock_minimo" className="block text-sm font-medium text-slate-700 mb-1">Stock Mínimo</label>
+              <label htmlFor="stock_minimo" className="block text-sm font-medium text-slate-700 mb-1.5">
+                Stock mínimo de alerta
+              </label>
               <input
-                id="stock_minimo" name="stock_minimo" type="number" min="0" step="0.01"
-                value={form.stock_minimo} onChange={handleChange}
+                id="stock_minimo"
+                name="stock_minimo"
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.stock_minimo}
+                onChange={handleChange}
                 placeholder="0"
                 disabled={loading}
-                className="w-full border border-slate-300 rounded-lg px-4 py-2 text-sm
-                           focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:bg-slate-50"
+                className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400
+                           focus:outline-none focus:border-[#0d825c] focus:ring-1 focus:ring-[#0d825c] transition disabled:bg-slate-50"
               />
             </div>
           </div>
 
+          {/* Estado (solo visible en edición) */}
           {esEdicion && (
             <div>
-              <label htmlFor="estado" className="block text-sm font-medium text-slate-700 mb-1">Estado</label>
+              <label htmlFor="estado" className="block text-sm font-medium text-slate-700 mb-1.5">
+                Estado del producto
+              </label>
               <select
-                id="estado" name="estado"
-                value={form.estado} onChange={handleChange}
+                id="estado"
+                name="estado"
+                value={form.estado}
+                onChange={handleChange}
                 disabled={loading}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm
-                           focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:bg-slate-50"
+                className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-800 bg-white
+                           focus:outline-none focus:border-[#0d825c] focus:ring-1 focus:ring-[#0d825c] transition disabled:bg-slate-50 cursor-pointer"
               >
                 <option value="activo">Activo</option>
                 <option value="inactivo">Inactivo</option>
@@ -173,15 +241,15 @@ export default function ModalProducto({ producto, onGuardado, onCancelar }) {
             </div>
           )}
 
-          {/* Acciones */}
-          <div className="flex gap-3 pt-2">
+          {/* Botones de Acción */}
+          <div className="flex gap-3 pt-4 border-t border-slate-100">
             <button
               id="btn-cancelar-modal"
               type="button"
               onClick={onCancelar}
               disabled={loading}
-              className="flex-1 border border-slate-300 text-slate-600 hover:bg-slate-50
-                         font-medium py-2.5 rounded-lg text-sm transition-colors"
+              className="flex-1 border border-slate-200 text-slate-600 hover:bg-slate-50
+                         font-semibold py-2.5 rounded-xl text-sm transition cursor-pointer"
             >
               Cancelar
             </button>
@@ -189,10 +257,23 @@ export default function ModalProducto({ producto, onGuardado, onCancelar }) {
               id="btn-guardar-producto"
               type="submit"
               disabled={loading}
-              className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400
-                         text-white font-semibold py-2.5 rounded-lg text-sm transition-colors"
+              className="flex-1 bg-[#0d825c] hover:bg-[#0a6b4c] disabled:bg-emerald-300
+                         text-white font-semibold py-2.5 rounded-xl text-sm transition shadow-sm hover:shadow
+                         flex items-center justify-center gap-2 cursor-pointer"
             >
-              {loading ? 'Guardando...' : esEdicion ? 'Actualizar' : 'Crear Producto'}
+              {loading ? (
+                <>
+                  <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                  </svg>
+                  <span>Guardando...</span>
+                </>
+              ) : esEdicion ? (
+                'Guardar cambios'
+              ) : (
+                'Crear producto'
+              )}
             </button>
           </div>
         </form>

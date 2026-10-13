@@ -146,10 +146,20 @@
 
 ---
 
-#### **Día 14: Despliegue a Producción en Vercel/Render y Entrega Final (COMPLETADO ✅)**
+#### **Día 14: Despliegue a Producción, Entrega Final y Documentación Etapa 4 (COMPLETADO ✅)**
 - [x] **Configuración Frontend (Vercel):** Archivo `frontend/vercel.json` con reglas de rewrite para navegación SPA sin errores 404.
 - [x] **Configuración Backend (Render):** Blueprint `backend/render.yaml` para despliegue automatizado con PostgreSQL.
-- [x] **Documentación de Cierre:** Manual de usuario para voluntarias en `docs/MANUAL_DE_USUARIO.md` y guía técnica integral en `README.md`.
+- [x] **Documentación Técnica y Operativa (Etapa 4):** Elaboración del documento maestro en `docs/Etapa4_Entrega_Final_Despensa_Plus_Sector7G.md` conteniendo:
+  - [x] **1. Introducción General:** Integración, coherencia y objetivos de la solución tecnológica.
+  - [x] **2. Manual Técnico:** Arquitectura 3 capas, estructura de directorios, DER detallado, configuración/instalación paso a paso, componentes principales, manejo de errores y validaciones.
+  - [x] **3. Manual de Usuario:** Flujos operativos paso a paso para voluntarias, capturas Stitch UI y alertas frecuentes.
+  - [x] **4. Base de Datos y CRUD:** Evidencia de persistencia atómica Create, Read, Update, Delete con control de concurrencia.
+  - [x] **5. Pruebas Unitarias:** Casos representativos de validación y cálculo con resultados esperados vs. obtenidos.
+  - [x] **6. Pruebas de Integración:** Evidencia de trazabilidad API ↔ DB ↔ UI con suite de 25 casos automatizados.
+  - [x] **7. Alcance Lógico de las Pruebas:** Justificación y representatividad.
+  - [x] **8. Entregables:** Repositorio Git, manuales, scripts DDL y checklist de evaluación docente.
+  - [x] **9. Conclusión:** Balance del ciclo cuatrimestral y valor aportado al comedor comunitario.
+- [x] **Manuales Auxiliares:** Guía rápida en `docs/MANUAL_DE_USUARIO.md` y guía técnica de inicio rápido en `README.md`.
 
 ---
 

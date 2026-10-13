@@ -32,7 +32,6 @@ Thumbs.db
 tmp/
 scratch/
 
-# Antigravity local skills & internal project docs
-.agents/
+# Documentation & Assets
 docs/
-GEMINI.md
+

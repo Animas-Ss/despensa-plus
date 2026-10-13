@@ -15,14 +15,6 @@ export default function Login() {
     setError('');
   };
 
-  const handleFillDemo = () => {
-    setForm({
-      email: 'admin@despensaplus.com',
-      password: 'admin123',
-    });
-    setError('');
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.email || !form.password) {
@@ -173,23 +165,6 @@ export default function Login() {
               )}
             </button>
           </form>
-
-          {/* Acceso Rápido / Credenciales Demo */}
-          <div className="mt-8 pt-6 border-t border-slate-100 bg-slate-50/70 -mx-8 -mb-8 sm:-mx-10 sm:-mb-10 px-8 sm:px-10 py-5 rounded-b-3xl">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold text-slate-700">Usuario de muestra:</p>
-                <p className="text-xs text-slate-500 font-mono">admin@despensaplus.com / admin123</p>
-              </div>
-              <button
-                type="button"
-                onClick={handleFillDemo}
-                className="text-xs font-medium text-emerald-700 hover:text-emerald-800 bg-emerald-100/70 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition"
-              >
-                Autocompletar
-              </button>
-            </div>
-          </div>
 
         </div>
       </div>

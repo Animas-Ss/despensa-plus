@@ -49,7 +49,7 @@ cd backend
 npm install
 npm run db:init
 ```
-*Este comando crea las 6 tablas relacionales (`Usuario`, `Producto`, `Donacion`, `DetalleDonacion`, `Salida`, `DetalleSalida`) y siembra 12 productos iniciales y el usuario administrador.*
+*Este comando crea las 6 tablas relacionales (`Usuario`, `Producto`, `Donacion`, `DetalleDonacion`, `Salida`, `DetalleSalida`) y siembra el lote completo de datos ficticios de prueba (3 usuarios, 16 productos, 7 donaciones y 7 salidas históricas con stock coherente para reportes). También puede ejecutar `npm run db:seed` para refrescar los datos sin alterar el esquema.*
 
 ### Paso 3: Iniciar el Servidor Backend
 ```bash

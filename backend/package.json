@@ -8,6 +8,7 @@
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "db:init": "node src/db/initDb.js",
+    "db:seed": "node src/db/seed.js",
     "test": "node tests/test_qa_suite.cjs"
   },
   "keywords": [

@@ -42,9 +42,14 @@ export default function Login() {
         <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-emerald-400/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 max-w-lg">
-          {/* Logo Despensa+ */}
-          <div className="flex items-center gap-1 mb-4">
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white">
+          {/* Logo Despensa+ con Isotipo */}
+          <div className="flex items-center gap-3.5 mb-5">
+            <img
+              src="/favicon.svg"
+              alt="Despensa+"
+              className="w-14 h-14 rounded-2xl shadow-lg ring-2 ring-white/20"
+            />
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white flex items-center">
               Despensa<span className="text-[#f59e0b] ml-0.5">+</span>
             </h1>
           </div>

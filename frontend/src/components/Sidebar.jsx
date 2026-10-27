@@ -84,9 +84,12 @@ export default function Sidebar() {
     <>
       {/* ── Barra Superior Móvil ────────────────────────────────────────── */}
       <header className="md:hidden bg-[#0d5945] text-white px-4 py-3 flex items-center justify-between sticky top-0 z-40 shadow-md">
-        <Link to="/dashboard" className="flex items-center gap-1 font-bold text-xl">
-          <span>Despensa</span>
-          <span className="text-[#f59e0b] font-extrabold">+</span>
+        <Link to="/dashboard" className="flex items-center gap-2 font-bold text-xl">
+          <img src="/favicon.svg" alt="Despensa+" className="w-7 h-7 rounded-lg shadow-2xs" />
+          <div className="flex items-center gap-0.5">
+            <span>Despensa</span>
+            <span className="text-[#f59e0b] font-extrabold">+</span>
+          </div>
         </Link>
         <div className="flex items-center gap-2">
           {usuario && (
@@ -129,14 +132,21 @@ export default function Sidebar() {
           <Link
             to="/dashboard"
             onClick={() => setMobileOpen(false)}
-            className="flex items-center gap-1 mb-8 px-2 group cursor-pointer"
+            className="flex items-center gap-3 mb-8 px-2 group cursor-pointer"
           >
-            <span className="text-2xl font-bold tracking-tight text-white group-hover:text-emerald-100 transition">
-              Despensa
-            </span>
-            <span className="text-2xl font-extrabold text-[#f59e0b] leading-none mb-0.5">
-              +
-            </span>
+            <img
+              src="/favicon.svg"
+              alt="Despensa+"
+              className="w-9 h-9 rounded-xl shadow-xs group-hover:scale-105 transition-transform"
+            />
+            <div className="flex items-center gap-0.5">
+              <span className="text-2xl font-bold tracking-tight text-white group-hover:text-emerald-100 transition">
+                Despensa
+              </span>
+              <span className="text-2xl font-extrabold text-[#f59e0b] leading-none mb-0.5">
+                +
+              </span>
+            </div>
           </Link>
 
           {/* Menú de Navegación */}

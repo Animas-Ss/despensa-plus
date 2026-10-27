@@ -12,6 +12,7 @@ const RegistrarDonacion = lazy(() => import('./pages/RegistrarDonacion'));
 const RegistrarSalida   = lazy(() => import('./pages/RegistrarSalida'));
 const Alertas           = lazy(() => import('./pages/Alertas'));
 const Reportes          = lazy(() => import('./pages/Reportes'));
+const Usuarios          = lazy(() => import('./pages/Usuarios'));
 
 // Fallback spinner elegante mientras carga el chunk
 function PageLoading() {
@@ -71,6 +72,9 @@ export default function App() {
               } />
               <Route path="/reportes" element={
                 <AppLayout><Reportes /></AppLayout>
+              } />
+              <Route path="/usuarios" element={
+                <AppLayout><Usuarios /></AppLayout>
               } />
             </Route>
 

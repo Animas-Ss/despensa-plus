@@ -96,6 +96,10 @@ node tests/test_qa_suite.js
 | `GET` | `/api/alertas` | Detección automática de stock bajo ($\le$ mínimo) y próximos vencimientos | Autenticado |
 | `GET` | `/api/reportes/resumen` | Métricas agregadas por período (total donaciones, salidas, saldo) | Autenticado |
 | `GET` | `/api/reportes/movimientos` | Trazabilidad histórica completa unificada para rendición de cuentas | Autenticado |
+| `GET` | `/api/usuarios` | Listado completo de usuarios del sistema | Admin |
+| `POST` | `/api/usuarios` | Alta de nuevo colaborador o administrador | Admin |
+| `PUT` | `/api/usuarios/:id` | Modificación de datos, roles o contraseña | Admin |
+| `DELETE` | `/api/usuarios/:id` | Baja de usuario con protección de integridad referencial | Admin |
 
 ---
 

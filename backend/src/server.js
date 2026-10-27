@@ -14,6 +14,7 @@ import stockRoutes    from './routes/stockRoutes.js';
 import salidaRoutes   from './routes/salidaRoutes.js';
 import alertaRoutes   from './routes/alertaRoutes.js';
 import reporteRoutes  from './routes/reporteRoutes.js';
+import usuarioRoutes  from './routes/usuarioRoutes.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -58,6 +59,7 @@ app.use('/api/stock',      stockRoutes);
 app.use('/api/salidas',    salidaRoutes);
 app.use('/api/alertas',    alertaRoutes);
 app.use('/api/reportes',   reporteRoutes);
+app.use('/api/usuarios',   usuarioRoutes);
 
 // Middleware de manejo de rutas no encontradas (404)
 app.use((req, res) => {

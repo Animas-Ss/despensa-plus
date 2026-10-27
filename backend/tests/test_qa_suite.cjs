@@ -40,6 +40,22 @@ function get(path, token = null) {
   return request({ hostname: 'localhost', port: 5000, path, method: 'GET', headers });
 }
 
+function put(path, data, token = null) {
+  const payload = JSON.stringify(data);
+  const headers = {
+    'Content-Type': 'application/json',
+    'Content-Length': Buffer.byteLength(payload)
+  };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  return request({ hostname: 'localhost', port: 5000, path, method: 'PUT', headers }, payload);
+}
+
+function del(path, token = null) {
+  const headers = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  return request({ hostname: 'localhost', port: 5000, path, method: 'DELETE', headers });
+}
+
 async function runTestSuite() {
   console.log('========================================================');
   console.log('🧪 SUITE INTEGRAL DE CALIDAD Y ACEPTACIÓN - DESPENSA+');
@@ -183,6 +199,52 @@ async function runTestSuite() {
   const repMovimientos = await get('/api/reportes/movimientos', token);
   assert(repMovimientos.status === 200, 'GET /api/reportes/movimientos responde HTTP 200');
   assert(repMovimientos.data?.movimientos?.length >= 2, 'Historial unificado contiene donaciones y salidas registradas');
+
+  // 12. Módulo de Gestión de Usuarios y Control RBAC (OWASP A01)
+  console.log('\n--- 12. Módulo de Gestión de Usuarios y Control RBAC ---');
+  const usersRes = await get('/api/usuarios', token);
+  assert(usersRes.status === 200, 'GET /api/usuarios como Admin responde HTTP 200');
+  assert(Array.isArray(usersRes.data?.usuarios), 'Lista de usuarios obtenida');
+
+  // Control RBAC: operador denegado con 403 Forbidden
+  const opLogin = await post('/api/auth/login', { email: 'operador@despensaplus.com', password: 'admin123' });
+  const opToken = opLogin.data?.token;
+  const opForbidden = await get('/api/usuarios', opToken);
+  assert(opForbidden.status === 403, 'Acceso a /api/usuarios como Operador es rechazado con HTTP 403 Forbidden');
+
+  // Crear nuevo usuario
+  const testEmail = `qa_test_${Date.now()}@despensaplus.com`;
+  const newUserRes = await post('/api/usuarios', {
+    nombre: 'Usuario Prueba QA',
+    email: testEmail,
+    password: 'password123',
+    rol: 'operador'
+  }, token);
+  assert(newUserRes.status === 201, 'POST /api/usuarios crea nuevo usuario exitosamente (HTTP 201)');
+  const newUserId = newUserRes.data?.usuario?.id_usuario;
+
+  // Intento de duplicado
+  const dupRes = await post('/api/usuarios', {
+    nombre: 'Duplicado',
+    email: testEmail,
+    password: 'password123',
+    rol: 'operador'
+  }, token);
+  assert(dupRes.status === 409, 'Intento de registrar email duplicado es rechazado con HTTP 409 Conflict');
+
+  // Actualizar usuario
+  const updateRes = await put(`/api/usuarios/${newUserId}`, {
+    nombre: 'Usuario Prueba Modificado'
+  }, token);
+  assert(updateRes.status === 200, 'PUT /api/usuarios/:id actualiza usuario correctamente (HTTP 200)');
+
+  // Salvaguarda: autoeliminación de cuenta admin en sesión
+  const selfDelRes = await del(`/api/usuarios/${goodLoginRes.data?.usuario?.id_usuario}`, token);
+  assert(selfDelRes.status === 400, 'Intento de autoeliminación de la propia cuenta admin es bloqueado con HTTP 400');
+
+  // Eliminar usuario de prueba
+  const delRes = await del(`/api/usuarios/${newUserId}`, token);
+  assert(delRes.status === 200, 'DELETE /api/usuarios/:id elimina usuario de prueba con HTTP 200');
 
   // Resumen final
   console.log('\n========================================================');
